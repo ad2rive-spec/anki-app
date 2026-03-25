@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Anki App — 單字管理</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<nav>
+  <span class="logo">📚 Anki</span>
+  <div class="nav-links">
+    <a href="review.html">複習</a>
+    <a href="manage.html" class="active">管理</a>
+  </div>
+  <div class="user-info">
+    <img class="avatar" id="avatar" src="" style="display:none">
+    <span class="user-name" id="userName"></span>
+    <button class="btn btn-secondary btn-sm" id="logoutBtn">登出</button>
+  </div>
+</nav>
+
+<div class="container">
+
+  <!-- Add card -->
+  <div class="card">
+    <h3 style="margin-bottom:16px;font-size:1rem">新增單字</h3>
+    <div class="add-form-grid">
+      <div class="form-group">
+        <label>單字 / 正面 *</label>
+        <input id="inFront" placeholder="e.g. hello">
+      </div>
+      <div class="form-group">
+        <label>意思 / 背面 *</label>
+        <input id="inBack" placeholder="e.g. 你好">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>例句</label>
+      <input id="inSentence" placeholder="e.g. Hello, how are you?">
+    </div>
+    <div class="form-group">
+      <label>標籤（用分號分隔）</label>
+      <input id="inTags" placeholder="e.g. 日常;問候">
+    </div>
+    <button class="btn btn-primary btn-full" id="addBtn">新增單字</button>
+  </div>
+
+  <!-- CSV Import -->
+  <div class="card">
+    <h3 style="margin-bottom:8px;font-size:1rem">匯入 CSV</h3>
+    <p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">格式：front,back,sentence,tags（tags 用分號分隔）</p>
+    <input type="file" id="csvFile" accept=".csv" style="margin-bottom:10px">
+    <button class="btn btn-secondary btn-full" id="importBtn">匯入</button>
+    <div id="importResult" style="margin-top:8px;font-size:.85rem;color:var(--muted)"></div>
+  </div>
+
+  <!-- Card list -->
+  <div>
+    <div class="section-header">
+      <h3>單字列表</h3>
+      <span id="cardCount" style="font-size:.85rem;color:var(--muted)"></span>
+    </div>
+    <div class="search-bar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input id="searchInput" placeholder="搜尋單字...">
+    </div>
+    <div class="card-list" id="cardList"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  import { auth } from "./firebase.js";
+  import { signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { addCard, getCards, deleteCard, importCSV } from "./db.js";
+
+  let uid, cards = [];
+
+  onAuthStateChanged(auth, async user => {
+    if (!user) { window.location.href = "index.html"; return; }
+    uid = user.uid;
+    document.getElementById("userName").textContent = user.displayName || user.email;
+    if (user.photoURL) {
+      const av = document.getElementById("avatar");
+      av.src = user.photoURL; av.style.display = "block";
+    }
+    cards = await getCards(uid);
+    renderList(cards);
+  });
+
+  document.getElementById("logoutBtn").addEventListener("click", () => signOut(auth));
+
+  // Add card
+  document.getElementById("addBtn").addEventListener("click", async () => {
+    const front = document.getElementById("inFront").value.trim();
+    const back = document.getElementById("inBack").value.trim();
+    if (!front || !back) { showToast("請填寫單字和意思"); return; }
+    const tags = document.getElementById("inTags").value.split(";").map(t => t.trim()).filter(Boolean);
+    const sentence = document.getElementById("inSentence").value.trim();
+    await addCard(uid, { front, back, sentence, tags });
+    showToast("已新增");
+    ["inFront","inBack","inSentence","inTags"].forEach(id => document.getElementById(id).value = "");
+    cards = await getCards(uid);
+    renderList(cards);
+  });
+
+  // CSV import
+  document.getElementById("importBtn").addEventListener("click", async () => {
+    const file = document.getElementById("csvFile").files[0];
+    if (!file) { showToast("請選擇 CSV 檔案"); return; }
+    const text = await file.text();
+    const count = await importCSV(uid, text);
+    document.getElementById("importResult").textContent = `✅ 成功匯入 ${count} 筆`;
+    cards = await getCards(uid);
+    renderList(cards);
+  });
+
+  // Search
+  document.getElementById("searchInput").addEventListener("input", e => {
+    const q = e.target.value.toLowerCase();
+    renderList(cards.filter(c => c.front.toLowerCase().includes(q) || (c.back||"").toLowerCase().includes(q)));
+  });
+
+  function renderList(list) {
+    const container = document.getElementById("cardList");
+    document.getElementById("cardCount").textContent = `${list.length} 筆`;
+    container.innerHTML = list.map(c => `
+      <div class="card-item">
+        <div class="card-item-info">
+          <div class="card-item-front">${c.front}</div>
+          <div class="card-item-back">${c.back || ""}</div>
+          ${c.sentence ? `<div class="card-item-sentence">${c.sentence}</div>` : ""}
+          ${(c.tags||[]).length ? `<div class="tags">${c.tags.map(t=>`<span class="tag">${t}</span>`).join("")}</div>` : ""}
+        </div>
+        <button class="btn btn-danger btn-sm" data-id="${c.id}" style="flex-shrink:0">刪除</button>
+      </div>
+    `).join("");
+
+    container.querySelectorAll("[data-id]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        if (!confirm("確定刪除？")) return;
+        await deleteCard(uid, btn.dataset.id);
+        cards = cards.filter(c => c.id !== btn.dataset.id);
+        renderList(cards);
+        showToast("已刪除");
+      });
+    });
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg; t.classList.add("show");
+    setTimeout(() => t.classList.remove("show"), 2500);
+  }
+</script>
+</body>
+</html>

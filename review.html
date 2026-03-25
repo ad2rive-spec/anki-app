@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Anki App — 複習</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<nav>
+  <span class="logo">📚 Anki</span>
+  <div class="nav-links">
+    <a href="review.html" class="active">複習</a>
+    <a href="manage.html">管理</a>
+  </div>
+  <div class="user-info">
+    <img class="avatar" id="avatar" src="" style="display:none">
+    <span class="user-name" id="userName"></span>
+    <button class="btn btn-secondary btn-sm" id="logoutBtn">登出</button>
+  </div>
+</nav>
+
+<div class="container">
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat"><div class="num" id="statDue">0</div><div class="label">待複習</div></div>
+    <div class="stat"><div class="num" id="statDone">0</div><div class="label">今日完成</div></div>
+    <div class="stat"><div class="num" id="statTotal">0</div><div class="label">總單字</div></div>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+
+  <!-- Review area -->
+  <div id="reviewArea">
+    <div class="review-card" id="reviewCard">
+      <div id="frontArea">
+        <div class="review-front" id="frontText">—</div>
+        <button class="tts-btn" id="ttsBtn" title="朗讀">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/>
+          </svg>
+        </button>
+      </div>
+      <div id="backArea" style="display:none">
+        <div class="review-back" id="backText"></div>
+        <div class="review-sentence" id="sentenceText"></div>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-top:16px" id="showBtn">
+      <button class="btn btn-primary" id="revealBtn">顯示答案</button>
+    </div>
+
+    <div class="rating-btns" id="ratingBtns" style="display:none">
+      <button class="rating-btn r0" data-q="0">完全不記得</button>
+      <button class="rating-btn r1" data-q="1">很難</button>
+      <button class="rating-btn r2" data-q="2">還行</button>
+      <button class="rating-btn r3" data-q="3">容易</button>
+    </div>
+  </div>
+
+  <div id="doneArea" style="display:none;text-align:center;padding:40px 0">
+    <div style="font-size:3rem">🎉</div>
+    <h2 style="margin:16px 0 8px">今日複習完成！</h2>
+    <p style="color:var(--muted)">明天再來繼續</p>
+    <button class="btn btn-secondary" style="margin-top:20px" onclick="location.href='manage.html'">管理單字</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  import { auth } from "./firebase.js";
+  import { signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getCards, getProgress, saveProgress } from "./db.js";
+  import { sm2, isDue } from "./sm2.js";
+
+  let uid, cards = [], progress = {}, queue = [], current = null, doneCount = 0;
+
+  onAuthStateChanged(auth, async user => {
+    if (!user) { window.location.href = "index.html"; return; }
+    uid = user.uid;
+    document.getElementById("userName").textContent = user.displayName || user.email;
+    if (user.photoURL) {
+      const av = document.getElementById("avatar");
+      av.src = user.photoURL; av.style.display = "block";
+    }
+    await loadData();
+  });
+
+  document.getElementById("logoutBtn").addEventListener("click", () => signOut(auth));
+
+  async function loadData() {
+    cards = await getCards(uid);
+    progress = await getProgress(uid);
+    queue = cards.filter(c => isDue({ ...progress[c.id] }));
+    document.getElementById("statDue").textContent = queue.length;
+    document.getElementById("statTotal").textContent = cards.length;
+    showNext();
+  }
+
+  function showNext() {
+    if (!queue.length) {
+      document.getElementById("reviewArea").style.display = "none";
+      document.getElementById("doneArea").style.display = "block";
+      return;
+    }
+    current = queue.shift();
+    document.getElementById("frontText").textContent = current.front;
+    document.getElementById("backText").textContent = current.back || "";
+    document.getElementById("sentenceText").textContent = current.sentence || "";
+    document.getElementById("backArea").style.display = "none";
+    document.getElementById("showBtn").style.display = "block";
+    document.getElementById("ratingBtns").style.display = "none";
+    updateProgress();
+  }
+
+  function updateProgress() {
+    const total = cards.filter(c => isDue({ ...progress[c.id] })).length + doneCount;
+    const pct = total > 0 ? (doneCount / total) * 100 : 0;
+    document.getElementById("progressFill").style.width = pct + "%";
+    document.getElementById("statDone").textContent = doneCount;
+  }
+
+  document.getElementById("revealBtn").addEventListener("click", () => {
+    document.getElementById("backArea").style.display = "block";
+    document.getElementById("showBtn").style.display = "none";
+    document.getElementById("ratingBtns").style.display = "grid";
+    speak(current.back);
+  });
+
+  document.getElementById("ttsBtn").addEventListener("click", () => speak(current.front));
+
+  document.querySelectorAll(".rating-btn").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const q = parseInt(btn.dataset.q) + 2; // map 0-3 → 2-5
+      const prev = progress[current.id] || {};
+      const next = sm2(prev, q);
+      progress[current.id] = next;
+      await saveProgress(uid, current.id, next);
+      doneCount++;
+      showNext();
+    });
+  });
+
+  function speak(text) {
+    if (!text || !speechSynthesis) return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "en-US";
+    speechSynthesis.speak(u);
+  }
+</script>
+</body>
+</html>
