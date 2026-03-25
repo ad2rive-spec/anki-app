@@ -128,7 +128,8 @@
     document.getElementById("backArea").style.display = "block";
     document.getElementById("showBtn").style.display = "none";
     document.getElementById("ratingBtns").style.display = "grid";
-    speak(current.back);
+    // 顯示答案後唸例句，沒有例句才唸正面單字
+    speak(current.sentence || current.front);
   });
 
   document.getElementById("ttsBtn").addEventListener("click", () => speak(current.front));
@@ -147,9 +148,14 @@
 
   function speak(text) {
     if (!text || !speechSynthesis) return;
+    // Chrome bug workaround: resume() 解決長時間閒置後 TTS 卡住的問題
     speechSynthesis.cancel();
+    speechSynthesis.resume();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = "en-US";
+    u.rate = 0.9;  // 稍微放慢，發音更清晰
+    // Chrome 另一個 bug: utterance 超過約 200 字會被截斷，用 onend 保底
+    u.onend = () => speechSynthesis.cancel();
     speechSynthesis.speak(u);
   }
 </script>
