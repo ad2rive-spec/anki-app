@@ -31,18 +31,12 @@ def parse_anki(input_path, output_path):
 
         cols = list(csv.reader([line], delimiter=delimiter))[0]
 
-        if delimiter == '\t':
-            # Anki txt 匯出: col0=id, col1=deck, col2=notetype, col3=front, col4=back
-            front = clean(cols[3]) if len(cols) > 3 else ""
-            back  = clean(cols[4]) if len(cols) > 4 else ""
-            deck  = cols[1].strip() if len(cols) > 1 else ""
-        else:
-            # 一般 CSV：嘗試用 header 對應，沒有 header 就用位置
-            if line.lower().startswith('front'):
-                continue  # 跳過 header 行
-            front = clean(cols[0]) if len(cols) > 0 else ""
-            back  = clean(cols[1]) if len(cols) > 1 else ""
-            deck  = clean(cols[4]) if len(cols) > 4 else ""
+        # col0=ID, col1=牌組類型, col2=牌組名稱, col3=正面, col4=背面
+        if len(cols) < 5:
+            continue
+        front = clean(cols[3])
+        back  = clean(cols[4])
+        deck  = cols[2].strip()
 
         tag = deck.split("::")[-1].strip() if deck else ""
 
