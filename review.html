@@ -193,6 +193,22 @@
     showNext();
   });
 
+  // 鍵盤快捷鍵
+  document.addEventListener("keydown", e => {
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+    if (e.code === "Space") {
+      e.preventDefault();
+      const revealBtn = document.getElementById("revealBtn");
+      if (document.getElementById("showBtn").style.display !== "none") revealBtn.click();
+    }
+    if (["1","2","3","4"].includes(e.key)) {
+      const btns = document.querySelectorAll(".rating-btn");
+      if (document.getElementById("ratingBtns").style.display !== "none") {
+        btns[parseInt(e.key) - 1]?.click();
+      }
+    }
+  });
+
   function detectLang(text) {
     if (/[\u3040-\u30FF\u4E00-\u9FFF\uFF00-\uFFEF]/.test(text)) return "ja-JP";
     return "en-US";
