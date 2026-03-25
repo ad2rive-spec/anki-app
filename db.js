@@ -68,14 +68,12 @@ export async function saveProgress(uid, cardId, progress) {
 
 // ── CSV Import ─────────────────────────────────────
 
-export async function importCSV(uid, csvText) {
+export async function importCSV(uid, csvText, onProgress) {
   const lines = csvText.trim().split("\n");
   const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
-  const batch = writeBatch(db);
-  let count = 0;
 
-  // 預先建立本次匯入用到的牌組（避免重複 addDoc）
-  const deckCache = {};
+  // 先解析所有卡片
+  const allCards = [];
   for (let i = 1; i < lines.length; i++) {
     const values = parseCSVLine(lines[i]);
     if (!values.length) continue;
@@ -83,25 +81,39 @@ export async function importCSV(uid, csvText) {
     headers.forEach((h, idx) => { card[h] = values[idx]?.trim() || ""; });
     if (!card.front) continue;
 
-    // 處理 deck
     const deckName = card.deck || "預設牌組";
-    if (!deckCache[deckName]) {
-      deckCache[deckName] = await ensureDeck(uid, deckName);
-    }
-    card.deckId = deckCache[deckName];
+    card._deckName = deckName;
     delete card.deck;
-
-    // 處理 tags
     if (card.tags) card.tags = card.tags.split(";").map(t => t.trim()).filter(Boolean);
     else card.tags = [];
-
-    card.createdAt = serverTimestamp();
-    const ref = doc(collection(db, "users", uid, "cards"));
-    batch.set(ref, card);
-    count++;
+    allCards.push(card);
   }
 
-  await batch.commit();
+  // 預先建立所有牌組
+  const deckCache = {};
+  const deckNames = [...new Set(allCards.map(c => c._deckName))];
+  for (const name of deckNames) {
+    deckCache[name] = await ensureDeck(uid, name);
+  }
+
+  // 分批寫入，每批 500 筆
+  const BATCH_SIZE = 500;
+  let count = 0;
+  for (let i = 0; i < allCards.length; i += BATCH_SIZE) {
+    const chunk = allCards.slice(i, i + BATCH_SIZE);
+    const batch = writeBatch(db);
+    for (const card of chunk) {
+      card.deckId = deckCache[card._deckName];
+      delete card._deckName;
+      card.createdAt = serverTimestamp();
+      const ref = doc(collection(db, "users", uid, "cards"));
+      batch.set(ref, card);
+      count++;
+    }
+    await batch.commit();
+    if (onProgress) onProgress(count, allCards.length);
+  }
+
   return count;
 }
 

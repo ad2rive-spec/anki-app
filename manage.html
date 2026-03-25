@@ -178,9 +178,15 @@
   document.getElementById("importBtn").addEventListener("click", async () => {
     const file = document.getElementById("csvFile").files[0];
     if (!file) { showToast("請選擇 CSV 檔案"); return; }
+    const resultEl = document.getElementById("importResult");
+    resultEl.textContent = "⏳ 匯入中...";
+    document.getElementById("importBtn").disabled = true;
     const text = await file.text();
-    const count = await importCSV(uid, text);
-    document.getElementById("importResult").textContent = `✅ 成功匯入 ${count} 筆`;
+    const count = await importCSV(uid, text, (done, total) => {
+      resultEl.textContent = `⏳ 匯入中 ${done} / ${total}`;
+    });
+    resultEl.textContent = `✅ 成功匯入 ${count} 筆`;
+    document.getElementById("importBtn").disabled = false;
     await refresh();
   });
 
