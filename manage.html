@@ -64,6 +64,10 @@
   <div class="card">
     <div class="section-header" style="margin-bottom:12px">
       <h3 style="font-size:1rem">牌組管理</h3>
+      <div style="display:flex;gap:8px">
+        <input id="newDeckName" placeholder="新牌組名稱" style="width:auto;flex:1;padding:7px 12px;font-size:.85rem">
+        <button class="btn btn-secondary btn-sm" id="addDeckBtn">新增</button>
+      </div>
     </div>
     <div id="deckList"></div>
   </div>
@@ -108,6 +112,16 @@
   });
 
   document.getElementById("logoutBtn").addEventListener("click", () => signOut(auth));
+
+  // Add deck
+  document.getElementById("addDeckBtn").addEventListener("click", async () => {
+    const name = document.getElementById("newDeckName").value.trim();
+    if (!name) { showToast("請輸入牌組名稱"); return; }
+    await ensureDeck(uid, name);
+    document.getElementById("newDeckName").value = "";
+    showToast(`牌組「${name}」已建立`);
+    await refresh();
+  });
 
   async function refresh() {
     [cards, decks] = await Promise.all([getCards(uid), getDecks(uid)]);
