@@ -146,15 +146,19 @@
     });
   });
 
+  function detectLang(text) {
+    if (/[\u3040-\u30FF\u4E00-\u9FFF\uFF00-\uFFEF]/.test(text)) return "ja-JP";
+    return "en-US";
+  }
+
   function speak(text) {
     if (!text || !speechSynthesis) return;
     // Chrome bug workaround: resume() 解決長時間閒置後 TTS 卡住的問題
     speechSynthesis.cancel();
     speechSynthesis.resume();
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = "en-US";
-    u.rate = 0.9;  // 稍微放慢，發音更清晰
-    // Chrome 另一個 bug: utterance 超過約 200 字會被截斷，用 onend 保底
+    u.lang = detectLang(text);
+    u.rate = 0.9;
     u.onend = () => speechSynthesis.cancel();
     speechSynthesis.speak(u);
   }
