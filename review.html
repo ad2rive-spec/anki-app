@@ -22,6 +22,13 @@
 </nav>
 
 <div class="container">
+  <!-- Deck selector -->
+  <div style="margin-bottom:12px">
+    <select id="deckSelect" class="deck-select">
+      <option value="">全部牌組</option>
+    </select>
+  </div>
+
   <!-- Stats -->
   <div class="stats">
     <div class="stat"><div class="num" id="statDue">0</div><div class="label">待複習</div></div>
@@ -78,10 +85,10 @@
 <script type="module">
   import { auth } from "./firebase.js";
   import { signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getCards, getProgress, saveProgress } from "./db.js";
+  import { getCards, getDecks, getProgress, saveProgress } from "./db.js";
   import { sm2, isDue } from "./sm2.js";
 
-  let uid, cards = [], progress = {}, queue = [], current = null, doneCount = 0, doneCards = [];
+  let uid, cards = [], allCards = [], decks = [], progress = {}, queue = [], current = null, doneCount = 0, doneCards = [];
 
   onAuthStateChanged(auth, async user => {
     if (!user) { window.location.href = "index.html"; return; }
@@ -97,13 +104,33 @@
   document.getElementById("logoutBtn").addEventListener("click", () => signOut(auth));
 
   async function loadData() {
-    cards = await getCards(uid);
-    progress = await getProgress(uid);
+    [allCards, decks, progress] = await Promise.all([getCards(uid), getDecks(uid), getProgress(uid)]);
+
+    // 填充牌組選單
+    const sel = document.getElementById("deckSelect");
+    sel.innerHTML = '<option value="">全部牌組</option>';
+    decks.forEach(d => {
+      const opt = document.createElement("option");
+      opt.value = d.id; opt.textContent = d.name;
+      sel.appendChild(opt);
+    });
+
+    applyDeckFilter();
+  }
+
+  function applyDeckFilter() {
+    const deckId = document.getElementById("deckSelect").value;
+    cards = deckId ? allCards.filter(c => c.deckId === deckId) : allCards;
     queue = cards.filter(c => isDue({ ...progress[c.id] }));
+    doneCards = []; doneCount = 0;
     document.getElementById("statDue").textContent = queue.length;
     document.getElementById("statTotal").textContent = cards.length;
+    document.getElementById("doneArea").style.display = "none";
+    document.getElementById("reviewArea").style.display = "block";
     showNext();
   }
+
+  document.getElementById("deckSelect").addEventListener("change", applyDeckFilter);
 
   function showNext() {
     if (!queue.length) {
