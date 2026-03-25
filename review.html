@@ -37,6 +37,7 @@
     <div class="review-card" id="reviewCard">
       <div id="frontArea">
         <div class="review-front" id="frontText">—</div>
+        <div class="tags" id="cardTags" style="justify-content:center;margin-top:8px"></div>
         <button class="tts-btn" id="ttsBtn" title="朗讀">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/>
@@ -65,7 +66,10 @@
     <div style="font-size:3rem">🎉</div>
     <h2 style="margin:16px 0 8px">今日複習完成！</h2>
     <p style="color:var(--muted)">明天再來繼續</p>
-    <button class="btn btn-secondary" style="margin-top:20px" onclick="location.href='manage.html'">管理單字</button>
+    <div style="display:flex;gap:12px;justify-content:center;margin-top:20px">
+      <button class="btn btn-primary" id="practiceAgainBtn">再練一次</button>
+      <button class="btn btn-secondary" onclick="location.href='manage.html'">管理單字</button>
+    </div>
   </div>
 </div>
 
@@ -77,7 +81,7 @@
   import { getCards, getProgress, saveProgress } from "./db.js";
   import { sm2, isDue } from "./sm2.js";
 
-  let uid, cards = [], progress = {}, queue = [], current = null, doneCount = 0;
+  let uid, cards = [], progress = {}, queue = [], current = null, doneCount = 0, doneCards = [];
 
   onAuthStateChanged(auth, async user => {
     if (!user) { window.location.href = "index.html"; return; }
@@ -111,6 +115,9 @@
     document.getElementById("frontText").textContent = current.front;
     document.getElementById("backText").textContent = current.back || "";
     document.getElementById("sentenceText").textContent = current.sentence || "";
+    // 顯示 tags
+    const tagsEl = document.getElementById("cardTags");
+    tagsEl.innerHTML = (current.tags || []).map(t => `<span class="tag">${t}</span>`).join("");
     document.getElementById("backArea").style.display = "none";
     document.getElementById("showBtn").style.display = "block";
     document.getElementById("ratingBtns").style.display = "none";
@@ -141,9 +148,20 @@
       const next = sm2(prev, q);
       progress[current.id] = next;
       await saveProgress(uid, current.id, next);
+      doneCards.push(current);
       doneCount++;
       showNext();
     });
+  });
+
+  document.getElementById("practiceAgainBtn").addEventListener("click", () => {
+    // 把今日已練過的牌重新洗入 queue
+    queue = [...doneCards].sort(() => Math.random() - 0.5);
+    doneCards = [];
+    doneCount = 0;
+    document.getElementById("doneArea").style.display = "none";
+    document.getElementById("reviewArea").style.display = "block";
+    showNext();
   });
 
   function detectLang(text) {
