@@ -155,12 +155,14 @@
   });
 
   document.getElementById("practiceAgainBtn").addEventListener("click", () => {
-    // 把今日已練過的牌重新洗入 queue
-    queue = [...doneCards].sort(() => Math.random() - 0.5);
+    // 優先用今日練過的牌，若為空則用全部單字
+    const source = doneCards.length ? doneCards : cards;
+    queue = [...source].sort(() => Math.random() - 0.5);
     doneCards = [];
     doneCount = 0;
     document.getElementById("doneArea").style.display = "none";
     document.getElementById("reviewArea").style.display = "block";
+    document.getElementById("statDue").textContent = queue.length;
     showNext();
   });
 
