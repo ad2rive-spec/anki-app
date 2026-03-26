@@ -96,8 +96,8 @@ export async function importCSV(uid, csvText, onProgress) {
     deckCache[name] = await ensureDeck(uid, name);
   }
 
-  // 分批寫入，每批 500 筆
-  const BATCH_SIZE = 500;
+  // 分批寫入，每批 200 筆
+  const BATCH_SIZE = 200;
   let count = 0;
   for (let i = 0; i < allCards.length; i += BATCH_SIZE) {
     const chunk = allCards.slice(i, i + BATCH_SIZE);
@@ -112,8 +112,8 @@ export async function importCSV(uid, csvText, onProgress) {
     }
     await batch.commit();
     if (onProgress) onProgress(count, allCards.length);
-    // 每批之間等 300ms，避免觸發 Firestore 速率限制
-    await new Promise(r => setTimeout(r, 300));
+    // 每批之間等 500ms，避免觸發 Firestore 速率限制
+    await new Promise(r => setTimeout(r, 500));
   }
 
   return count;
