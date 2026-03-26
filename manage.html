@@ -57,7 +57,12 @@
     <p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">格式：front,back,sentence,tags,deck（tags 用分號分隔，deck 欄位自動建立牌組）</p>
     <input type="file" id="csvFile" accept=".csv" style="margin-bottom:10px">
     <button class="btn btn-secondary btn-full" id="importBtn">匯入</button>
-    <div id="importResult" style="margin-top:8px;font-size:.85rem;color:var(--muted)"></div>
+    <div id="importProgress" style="display:none;margin-top:12px">
+      <div style="font-size:.85rem;color:var(--muted);margin-bottom:6px" id="importResult"></div>
+      <div style="background:var(--surface2);border-radius:4px;height:8px;overflow:hidden">
+        <div id="importBar" style="background:var(--accent);height:100%;width:0%;transition:width .2s"></div>
+      </div>
+    </div>
   </div>
 
   <!-- Deck list -->
@@ -179,13 +184,20 @@
     const file = document.getElementById("csvFile").files[0];
     if (!file) { showToast("請選擇 CSV 檔案"); return; }
     const resultEl = document.getElementById("importResult");
-    resultEl.textContent = "⏳ 匯入中...";
+    const progressEl = document.getElementById("importProgress");
+    const barEl = document.getElementById("importBar");
+    progressEl.style.display = "block";
+    resultEl.textContent = "⏳ 解析中...";
+    barEl.style.width = "0%";
     document.getElementById("importBtn").disabled = true;
     const text = await file.text();
     const count = await importCSV(uid, text, (done, total) => {
-      resultEl.textContent = `⏳ 匯入中 ${done} / ${total}`;
+      const pct = Math.round((done / total) * 100);
+      resultEl.textContent = `⏳ 匯入中 ${done} / ${total} (${pct}%)`;
+      barEl.style.width = pct + "%";
     });
     resultEl.textContent = `✅ 成功匯入 ${count} 筆`;
+    barEl.style.width = "100%";
     document.getElementById("importBtn").disabled = false;
     await refresh();
   });
