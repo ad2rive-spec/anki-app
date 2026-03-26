@@ -115,14 +115,15 @@ textarea { resize: vertical; min-height: 80px; }
 .card-scene {
   perspective: 1000px;
   margin-bottom: 16px;
+  min-height: 220px;
 }
 .review-card {
   background: transparent;
   border-radius: 16px;
+  min-height: 220px;
   position: relative;
   transform-style: preserve-3d;
   transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
-  /* 高度由 JS 動態設定 */
 }
 .review-card.flipped { transform: rotateY(180deg); }
 .card-face {
@@ -139,17 +140,6 @@ textarea { resize: vertical; min-height: 80px; }
   -webkit-backface-visibility: hidden;
 }
 .card-face.back { transform: rotateY(180deg); }
-/* 用來量測高度的隱藏 clone */
-.card-measure {
-  visibility: hidden; pointer-events: none;
-  position: absolute; left: 0; right: 0; top: -9999px;
-  background: var(--surface);
-  border-radius: 16px;
-  padding: 36px 24px;
-  display: flex; flex-direction: column;
-  align-items: center; gap: 14px;
-  text-align: center;
-}
 .review-front { font-size: 2.2rem; font-weight: 700; color: var(--text); line-height: 1.2; word-break: break-word; }
 .review-back { font-size: 1.3rem; color: var(--accent2); font-weight: 600; }
 .review-sentence { font-size: 0.9rem; color: var(--muted); font-style: italic; line-height: 1.5; }

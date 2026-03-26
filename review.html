@@ -52,7 +52,7 @@
 
   <!-- Review area -->
   <div id="reviewArea" style="display:none">
-    <div class="card-scene" id="cardScene">
+    <div class="card-scene">
       <div class="review-card" id="reviewCard">
         <!-- Front face -->
         <div class="card-face front" id="frontFace">
@@ -157,7 +157,6 @@
     document.getElementById("emptyArea").style.display = "none";
 
     const deckId = document.getElementById("deckSelect").value || null;
-    // 先抓 cards，再把 cards 傳給 getProgress 避免重複讀
     cards = await getCards(uid, deckId);
     progress = await getProgress(uid, deckId, cards);
     allCards = cards;
@@ -200,14 +199,9 @@
     const tagsHtml = (current.tags || []).map(t => `<span class="tag">${t}</span>`).join("");
     document.getElementById("cardTags").innerHTML = tagsHtml;
     document.getElementById("cardTagsBack").innerHTML = tagsHtml;
-    // 同步 proxy 撐高度
-    document.getElementById("frontTextProxy").textContent = current.front;
-    document.getElementById("backTextProxy").textContent = current.back || "";
-    document.getElementById("sentenceTextProxy").textContent = current.sentence || "";
     document.getElementById("showBtn").style.display = "block";
     document.getElementById("ratingBtns").style.display = "none";
     updateProgress();
-    updateCardHeight();
   }
 
   function updateProgress() {
@@ -273,30 +267,6 @@
       }
     }
   });
-
-  function updateCardHeight() {
-    // 用隱藏的 measure div 量測正面和背面各自的高度，取較大值
-    const scene = document.getElementById("cardScene");
-    const card = document.getElementById("reviewCard");
-    const w = scene.offsetWidth;
-
-    const measure = (html) => {
-      const div = document.createElement("div");
-      div.className = "card-measure";
-      div.style.width = w + "px";
-      div.innerHTML = html;
-      document.body.appendChild(div);
-      const h = div.offsetHeight;
-      document.body.removeChild(div);
-      return h;
-    };
-
-    const tagsHtml = (current.tags || []).map(t => `<span class="tag">${t}</span>`).join("");
-    const frontH = measure(`<div class="review-front">${current.front}</div><div class="tags">${tagsHtml}</div>`);
-    const backH  = measure(`<div class="review-back">${current.back||""}</div><div class="review-sentence">${current.sentence||""}</div><div class="tags">${tagsHtml}</div>`);
-    const h = Math.max(frontH, backH, 180);
-    card.style.height = h + "px";
-  }
 
   function detectLang(text) {
     if (/[\u3040-\u30FF\u4E00-\u9FFF\uFF00-\uFFEF]/.test(text)) return "ja-JP";
