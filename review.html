@@ -104,23 +104,25 @@
   document.getElementById("logoutBtn").addEventListener("click", () => signOut(auth));
 
   async function loadData() {
-    [allCards, decks, progress] = await Promise.all([getCards(uid), getDecks(uid), getProgress(uid)]);
+    // 只先載入牌組清單，不載入全部卡片
+    [decks, progress] = await Promise.all([getDecks(uid), getProgress(uid)]);
 
-    // 填充牌組選單
     const sel = document.getElementById("deckSelect");
-    sel.innerHTML = '<option value="">全部牌組</option>';
-    decks.forEach(d => {
-      const opt = document.createElement("option");
-      opt.value = d.id; opt.textContent = d.name;
-      sel.appendChild(opt);
-    });
+    const opts = decks.map(d => `<option value="${d.id}">${d.name}</option>`).join("");
+    // 牌組在前，全部牌組在最後
+    sel.innerHTML = opts + '<option value="">全部牌組</option>';
 
-    applyDeckFilter();
+    // 預設選第一個牌組
+    if (decks.length) sel.value = decks[0].id;
+
+    await applyDeckFilter();
   }
 
-  function applyDeckFilter() {
+  async function applyDeckFilter() {
     const deckId = document.getElementById("deckSelect").value;
-    cards = deckId ? allCards.filter(c => c.deckId === deckId) : allCards;
+    // 只抓選定牌組的卡片
+    allCards = await getCards(uid, deckId || null);
+    cards = allCards;
     queue = cards.filter(c => isDue({ ...progress[c.id] }));
     doneCards = []; doneCount = 0;
     document.getElementById("statDue").textContent = queue.length;

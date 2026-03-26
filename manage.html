@@ -129,16 +129,21 @@
   });
 
   async function refresh() {
-    [cards, decks] = await Promise.all([getCards(uid), getDecks(uid)]);
-    renderDecks();
+    decks = await getDecks(uid);
     renderDeckSelects();
+    const deckId = document.getElementById("filterDeck").value;
+    cards = await getCards(uid, deckId || null);
+    renderDecks();
     renderList(cards);
   }
 
   function renderDeckSelects() {
     const opts = decks.map(d => `<option value="${d.id}">${d.name}</option>`).join("");
     document.getElementById("inDeck").innerHTML = '<option value="">— 選擇牌組 —</option>' + opts;
-    document.getElementById("filterDeck").innerHTML = '<option value="">全部牌組</option>' + opts;
+    const filterSel = document.getElementById("filterDeck");
+    const current = filterSel.value;
+    filterSel.innerHTML = opts + '<option value="">全部牌組</option>';
+    filterSel.value = current || (decks[0]?.id ?? "");
   }
 
   function renderDecks() {
@@ -212,7 +217,11 @@
     );
   }
 
-  document.getElementById("filterDeck").addEventListener("change", () => renderList(getFiltered()));
+  document.getElementById("filterDeck").addEventListener("change", async () => {
+    const deckId = document.getElementById("filterDeck").value;
+    cards = await getCards(uid, deckId || null);
+    renderList(getFiltered());
+  });
   document.getElementById("searchInput").addEventListener("input", () => renderList(getFiltered()));
 
   function renderList(list) {
