@@ -54,6 +54,13 @@
   <div id="reviewArea" style="display:none">
     <div class="card-scene">
       <div class="review-card" id="reviewCard">
+        <!-- 高度佔位（不可見，讓容器跟著最高的那面走） -->
+        <div class="card-height-proxy" id="heightProxy">
+          <div class="review-front" id="frontTextProxy">—</div>
+          <div class="tags"></div>
+          <div class="review-back" id="backTextProxy"></div>
+          <div class="review-sentence" id="sentenceTextProxy"></div>
+        </div>
         <!-- Front face -->
         <div class="card-face front" id="frontFace">
           <div class="review-front" id="frontText">—</div>
@@ -198,6 +205,10 @@
     const tagsHtml = (current.tags || []).map(t => `<span class="tag">${t}</span>`).join("");
     document.getElementById("cardTags").innerHTML = tagsHtml;
     document.getElementById("cardTagsBack").innerHTML = tagsHtml;
+    // 同步 proxy 撐高度
+    document.getElementById("frontTextProxy").textContent = current.front;
+    document.getElementById("backTextProxy").textContent = current.back || "";
+    document.getElementById("sentenceTextProxy").textContent = current.sentence || "";
     document.getElementById("showBtn").style.display = "block";
     document.getElementById("ratingBtns").style.display = "none";
     updateProgress();
