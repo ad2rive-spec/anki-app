@@ -1,7 +1,7 @@
 import { db } from "./firebase.js";
 import {
   collection, doc, addDoc, setDoc, getDocs,
-  deleteDoc, query, orderBy, serverTimestamp, writeBatch, getDoc
+  deleteDoc, query, orderBy, where, serverTimestamp, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // ── Decks ──────────────────────────────────────────
@@ -11,8 +11,9 @@ export async function getDecks(uid) {
   return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
-export async function ensureDeck(uid, name) {
-  // 找已存在的同名牌組，沒有就建立
+export async function ensureDeck(uid, name, deckCache = null) {
+  // 若有傳入 cache 就直接查，避免重複讀 Firestore
+  if (deckCache && deckCache[name]) return deckCache[name];
   const snap = await getDocs(collection(db, "users", uid, "decks"));
   const existing = snap.docs.find(d => d.data().name === name);
   if (existing) return existing.id;
@@ -21,15 +22,17 @@ export async function ensureDeck(uid, name) {
 }
 
 export async function deleteDeck(uid, deckId) {
-  // 刪牌組及其所有卡片
   const cards = await getCards(uid, deckId);
-  const batch = writeBatch(db);
-  cards.forEach(c => {
-    batch.delete(doc(db, "users", uid, "cards", c.id));
-    batch.delete(doc(db, "users", uid, "progress", c.id));
-  });
-  batch.delete(doc(db, "users", uid, "decks", deckId));
-  await batch.commit();
+  const BATCH_SIZE = 500;
+  for (let i = 0; i < cards.length; i += BATCH_SIZE) {
+    const batch = writeBatch(db);
+    cards.slice(i, i + BATCH_SIZE).forEach(c => {
+      batch.delete(doc(db, "users", uid, "cards", c.id));
+      batch.delete(doc(db, "users", uid, "progress", c.id));
+    });
+    await batch.commit();
+  }
+  await deleteDoc(doc(db, "users", uid, "decks", deckId));
 }
 
 // ── Cards ──────────────────────────────────────────
@@ -42,10 +45,13 @@ export async function addCard(uid, card) {
 }
 
 export async function getCards(uid, deckId = null) {
-  const snap = await getDocs(query(collection(db, "users", uid, "cards"), orderBy("createdAt", "desc")));
-  const cards = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  if (deckId) return cards.filter(c => c.deckId === deckId);
-  return cards;
+  // 用 where 在 Firestore 過濾，不抓全部再 client filter
+  const col = collection(db, "users", uid, "cards");
+  const q = deckId
+    ? query(col, where("deckId", "==", deckId), orderBy("createdAt", "desc"))
+    : query(col, orderBy("createdAt", "desc"));
+  const snap = await getDocs(q);
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
 export async function deleteCard(uid, cardId) {
@@ -55,7 +61,24 @@ export async function deleteCard(uid, cardId) {
 
 // ── Progress ───────────────────────────────────────
 
-export async function getProgress(uid) {
+export async function getProgress(uid, deckId = null) {
+  if (deckId) {
+    // 只抓該牌組的 progress：先拿卡片 id 清單，再批次讀 progress
+    const cards = await getCards(uid, deckId);
+    if (!cards.length) return {};
+    const map = {};
+    // Firestore 'in' 最多 30 個，分批查
+    for (let i = 0; i < cards.length; i += 30) {
+      const ids = cards.slice(i, i + 30).map(c => c.id);
+      const snap = await getDocs(query(
+        collection(db, "users", uid, "progress"),
+        where("__name__", "in", ids)
+      ));
+      snap.docs.forEach(d => { map[d.id] = d.data(); });
+    }
+    return map;
+  }
+  // 全部牌組才抓全部 progress
   const snap = await getDocs(collection(db, "users", uid, "progress"));
   const map = {};
   snap.docs.forEach(d => { map[d.id] = d.data(); });
@@ -72,7 +95,6 @@ export async function importCSV(uid, csvText, onProgress) {
   const lines = csvText.trim().split("\n");
   const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
 
-  // 先解析所有卡片
   const allCards = [];
   for (let i = 1; i < lines.length; i++) {
     const values = parseCSVLine(lines[i]);
@@ -80,23 +102,25 @@ export async function importCSV(uid, csvText, onProgress) {
     const card = {};
     headers.forEach((h, idx) => { card[h] = values[idx]?.trim() || ""; });
     if (!card.front) continue;
-
-    const deckName = card.deck || "預設牌組";
-    card._deckName = deckName;
+    card._deckName = card.deck || "預設牌組";
     delete card.deck;
-    if (card.tags) card.tags = card.tags.split(";").map(t => t.trim()).filter(Boolean);
-    else card.tags = [];
+    card.tags = card.tags ? card.tags.split(";").map(t => t.trim()).filter(Boolean) : [];
     allCards.push(card);
   }
 
-  // 預先建立所有牌組
+  // 一次讀取所有現有牌組，建立 cache，避免每個牌組名稱都查一次 Firestore
+  const existingDecks = await getDecks(uid);
   const deckCache = {};
-  const deckNames = [...new Set(allCards.map(c => c._deckName))];
-  for (const name of deckNames) {
-    deckCache[name] = await ensureDeck(uid, name);
+  existingDecks.forEach(d => { deckCache[d.name] = d.id; });
+
+  // 建立新牌組（只建立 cache 裡沒有的）
+  const newDeckNames = [...new Set(allCards.map(c => c._deckName))].filter(n => !deckCache[n]);
+  for (const name of newDeckNames) {
+    const ref = await addDoc(collection(db, "users", uid, "decks"), { name, createdAt: serverTimestamp() });
+    deckCache[name] = ref.id;
   }
 
-  // 分批寫入，每批 200 筆
+  // 分批寫入
   const BATCH_SIZE = 200;
   let count = 0;
   for (let i = 0; i < allCards.length; i += BATCH_SIZE) {
@@ -106,13 +130,11 @@ export async function importCSV(uid, csvText, onProgress) {
       card.deckId = deckCache[card._deckName];
       delete card._deckName;
       card.createdAt = serverTimestamp();
-      const ref = doc(collection(db, "users", uid, "cards"));
-      batch.set(ref, card);
+      batch.set(doc(collection(db, "users", uid, "cards")), card);
       count++;
     }
     await batch.commit();
     if (onProgress) onProgress(count, allCards.length);
-    // 每批之間等 500ms，避免觸發 Firestore 速率限制
     await new Promise(r => setTimeout(r, 500));
   }
 

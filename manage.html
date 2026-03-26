@@ -149,16 +149,13 @@
   function renderDecks() {
     const el = document.getElementById("deckList");
     if (!decks.length) { el.innerHTML = '<p style="color:var(--muted);font-size:.85rem">尚無牌組</p>'; return; }
-    el.innerHTML = decks.map(d => {
-      const count = cards.filter(c => c.deckId === d.id).length;
-      return `<div class="card-item">
+    el.innerHTML = decks.map(d => `
+      <div class="card-item">
         <div class="card-item-info">
           <div class="card-item-front">📂 ${d.name}</div>
-          <div class="card-item-back">${count} 張單字</div>
         </div>
         <button class="btn btn-danger btn-sm" data-deck="${d.id}" style="flex-shrink:0">刪除</button>
-      </div>`;
-    }).join("");
+      </div>`).join("");
     el.querySelectorAll("[data-deck]").forEach(btn => {
       btn.addEventListener("click", async () => {
         const deck = decks.find(d => d.id === btn.dataset.deck);
