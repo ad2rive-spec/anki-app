@@ -61,32 +61,47 @@ export async function deleteCard(uid, cardId) {
 
 // ── Progress ───────────────────────────────────────
 
-export async function getProgress(uid, deckId = null) {
+export async function getProgress(uid, deckId = null, knownCards = null) {
+  // 用 sessionStorage 快取，同一個 session 不重複讀 Firestore
+  const cacheKey = `progress_${uid}_${deckId || "all"}`;
+  const cached = sessionStorage.getItem(cacheKey);
+  if (cached) return JSON.parse(cached);
+
+  let map = {};
   if (deckId) {
-    // 只抓該牌組的 progress：先拿卡片 id 清單，再批次讀 progress
-    const cards = await getCards(uid, deckId);
-    if (!cards.length) return {};
-    const map = {};
-    // Firestore 'in' 最多 30 個，分批查
-    for (let i = 0; i < cards.length; i += 30) {
-      const ids = cards.slice(i, i + 30).map(c => c.id);
-      const snap = await getDocs(query(
-        collection(db, "users", uid, "progress"),
-        where("__name__", "in", ids)
-      ));
-      snap.docs.forEach(d => { map[d.id] = d.data(); });
+    // 用傳入的 cards 避免重複讀，沒有才自己查
+    const cards = knownCards || await getCards(uid, deckId);
+    if (cards.length) {
+      for (let i = 0; i < cards.length; i += 30) {
+        const ids = cards.slice(i, i + 30).map(c => c.id);
+        const snap = await getDocs(query(
+          collection(db, "users", uid, "progress"),
+          where("__name__", "in", ids)
+        ));
+        snap.docs.forEach(d => { map[d.id] = d.data(); });
+      }
     }
-    return map;
+  } else {
+    const snap = await getDocs(collection(db, "users", uid, "progress"));
+    snap.docs.forEach(d => { map[d.id] = d.data(); });
   }
-  // 全部牌組才抓全部 progress
-  const snap = await getDocs(collection(db, "users", uid, "progress"));
-  const map = {};
-  snap.docs.forEach(d => { map[d.id] = d.data(); });
+
+  sessionStorage.setItem(cacheKey, JSON.stringify(map));
   return map;
 }
 
-export async function saveProgress(uid, cardId, progress) {
-  await setDoc(doc(db, "users", uid, "progress", cardId), progress, { merge: true });
+export async function saveProgress(uid, cardId, data) {
+  await setDoc(doc(db, "users", uid, "progress", cardId), data, { merge: true });
+  // 更新 sessionStorage cache
+  for (const key of Object.keys(sessionStorage)) {
+    if (key.startsWith(`progress_${uid}`)) {
+      try {
+        const cached = JSON.parse(sessionStorage.getItem(key));
+        cached[cardId] = data;
+        sessionStorage.setItem(key, JSON.stringify(cached));
+      } catch {}
+    }
+  }
 }
 
 // ── CSV Import ─────────────────────────────────────

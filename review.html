@@ -164,7 +164,9 @@
     document.getElementById("emptyArea").style.display = "none";
 
     const deckId = document.getElementById("deckSelect").value || null;
-    [cards, progress] = await Promise.all([getCards(uid, deckId), getProgress(uid, deckId)]);
+    // 先抓 cards，再把 cards 傳給 getProgress 避免重複讀
+    cards = await getCards(uid, deckId);
+    progress = await getProgress(uid, deckId, cards);
     allCards = cards;
     queue = cards.filter(c => isDue({ ...progress[c.id] }));
     doneCards = []; doneCount = 0; correctCount = 0; sessionStart = Date.now();
