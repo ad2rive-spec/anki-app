@@ -112,8 +112,8 @@ export async function importCSV(uid, csvText, onProgress) {
     }
     await batch.commit();
     if (onProgress) onProgress(count, allCards.length);
-    // 讓瀏覽器有機會重繪 DOM
-    await new Promise(r => setTimeout(r, 0));
+    // 每批之間等 300ms，避免觸發 Firestore 速率限制
+    await new Promise(r => setTimeout(r, 300));
   }
 
   return count;
