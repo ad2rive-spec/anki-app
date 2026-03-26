@@ -16,7 +16,11 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html { height: 100%; }
-body { font-family: -apple-system, 'SF Pro Text', sans-serif; background: var(--bg); color: var(--text); min-height: 100%; }
+body {
+  font-family: -apple-system, 'SF Pro Text', sans-serif;
+  background: var(--bg); color: var(--text); min-height: 100%;
+  overscroll-behavior: contain; /* prevent accidental pull-to-refresh */
+}
 
 /* ── Nav ── */
 nav {
@@ -52,7 +56,7 @@ nav .user-name { font-size: 0.8rem; color: var(--muted); max-width: 80px; overfl
   padding: 10px 18px; border: none; border-radius: var(--radius);
   font-size: 0.9rem; font-weight: 600; cursor: pointer;
   transition: opacity .15s, transform .1s; white-space: nowrap;
-  min-height: 44px; /* touch target */
+  min-height: 44px;
 }
 .btn:active { opacity: 0.8; transform: scale(0.97); }
 .btn-primary { background: var(--accent); color: #fff; }
@@ -83,10 +87,10 @@ input, textarea, select {
   width: 100%; padding: 11px 14px;
   background: var(--surface2); border: 1px solid var(--border);
   border-radius: 8px; color: var(--text);
-  font-size: 1rem; /* prevent iOS zoom */
+  font-size: 1rem;
   outline: none; transition: border-color .15s; font-family: inherit;
 }
-input:focus, textarea:focus { border-color: var(--accent); }
+input:focus, textarea:focus, select:focus { border-color: var(--accent); }
 textarea { resize: vertical; min-height: 80px; }
 
 /* ── Tags ── */
@@ -107,19 +111,35 @@ textarea { resize: vertical; min-height: 80px; }
 .progress-bar { background: var(--surface2); border-radius: 4px; height: 5px; overflow: hidden; margin-bottom: 20px; }
 .progress-fill { background: var(--accent); height: 100%; transition: width .3s; }
 
-/* ── Review card ── */
+/* ── Review card flip ── */
+.card-scene {
+  perspective: 1000px;
+  margin-bottom: 16px;
+  min-height: 220px;
+}
 .review-card {
+  background: transparent;
+  border-radius: 16px;
+  min-height: 220px;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.review-card.flipped { transform: rotateY(180deg); }
+.card-face {
+  position: absolute; inset: 0;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 36px 24px;
-  text-align: center;
-  min-height: 220px;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   gap: 14px;
-  margin-bottom: 16px;
+  text-align: center;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
+.card-face.back { transform: rotateY(180deg); }
 .review-front { font-size: 2.2rem; font-weight: 700; color: var(--text); line-height: 1.2; word-break: break-word; }
 .review-back { font-size: 1.3rem; color: var(--accent2); font-weight: 600; }
 .review-sentence { font-size: 0.9rem; color: var(--muted); font-style: italic; line-height: 1.5; }
@@ -132,6 +152,8 @@ textarea { resize: vertical; min-height: 80px; }
   cursor: pointer; color: var(--muted); transition: all .15s;
 }
 .tts-btn:hover { color: var(--accent2); border-color: var(--accent); }
+.tts-btn.playing { color: var(--accent2); border-color: var(--accent); animation: tts-pulse 1s ease-in-out infinite; }
+@keyframes tts-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(124,106,247,.4); } 50% { box-shadow: 0 0 0 6px rgba(124,106,247,0); } }
 
 /* ── Rating buttons ── */
 .rating-btns {
@@ -141,16 +163,79 @@ textarea { resize: vertical; min-height: 80px; }
   margin-top: 4px;
 }
 .rating-btn {
-  padding: 16px 8px; border: none; border-radius: 12px;
+  padding: 12px 8px 8px; border: none; border-radius: 12px;
   font-size: 0.85rem; font-weight: 600; cursor: pointer;
   transition: opacity .15s, transform .1s;
-  min-height: 56px; /* comfortable touch target */
+  min-height: 56px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
 }
 .rating-btn:active { opacity: 0.8; transform: scale(0.97); }
+.rating-btn .key-hint { font-size: 0.65rem; opacity: 0.6; font-weight: 400; }
 .r0 { background: #7f1d1d; color: #fca5a5; }
 .r1 { background: #78350f; color: #fcd34d; }
 .r2 { background: #1e3a5f; color: #93c5fd; }
 .r3 { background: #14532d; color: #86efac; }
+
+/* ── Skeleton loading ── */
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--surface2) 25%, var(--border) 50%, var(--surface2) 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 8px;
+}
+.skeleton-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 36px 24px; min-height: 220px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+  margin-bottom: 16px;
+}
+.skeleton-line { height: 16px; width: 60%; }
+.skeleton-line.lg { height: 40px; width: 40%; }
+.skeleton-line.sm { height: 12px; width: 80%; }
+
+/* ── Inline delete confirm ── */
+.card-item { position: relative; overflow: hidden; }
+.delete-confirm {
+  display: none;
+  position: absolute; inset: 0;
+  background: rgba(127,29,29,.95);
+  border-radius: var(--radius);
+  align-items: center; justify-content: center; gap: 12px;
+  font-size: 0.85rem; color: #fca5a5;
+}
+.delete-confirm.show { display: flex; }
+
+/* ── Accordion ── */
+.accordion-header {
+  display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer; padding: 16px 20px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); margin-bottom: 4px;
+  transition: background .15s;
+  user-select: none;
+}
+.accordion-header:hover { background: var(--surface2); }
+.accordion-header h3 { font-size: 0.95rem; font-weight: 600; }
+.accordion-arrow { transition: transform .25s; color: var(--muted); }
+.accordion-header.open .accordion-arrow { transform: rotate(180deg); }
+.accordion-body {
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height .3s ease;
+}
+.accordion-body.open { max-height: 2000px; }
+.accordion-body-inner { padding: 4px 0 14px; }
+
+/* ── Empty state ── */
+.empty-state {
+  text-align: center; padding: 48px 24px; color: var(--muted);
+}
+.empty-state .icon { font-size: 3rem; margin-bottom: 12px; }
+.empty-state p { font-size: 0.9rem; line-height: 1.6; }
 
 /* ── Login page ── */
 .login-page {
@@ -195,6 +280,23 @@ textarea { resize: vertical; min-height: 80px; }
 .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
 .section-header h3 { font-size: 0.95rem; font-weight: 600; }
 
+/* ── Deck select ── */
+.deck-select {
+  padding: 9px 14px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text);
+  font-size: 0.9rem; cursor: pointer;
+  width: 100%;
+}
+.deck-select:focus { border-color: var(--accent); }
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .review-card { transition: none; }
+  .skeleton { animation: none; }
+  .tts-btn.playing { animation: none; }
+}
+
 /* ── Responsive ── */
 @media (max-width: 480px) {
   nav .user-name { display: none; }
@@ -206,13 +308,4 @@ textarea { resize: vertical; min-height: 80px; }
 @media (min-width: 600px) {
   .rating-btns { grid-template-columns: repeat(4, 1fr); }
   .add-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-}
-
-/* ── Deck select ── */
-.deck-select {
-  padding: 9px 14px;
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 8px; color: var(--text);
-  font-size: 0.9rem; cursor: pointer;
-  width: 100%;
 }

@@ -23,62 +23,79 @@
 
 <div class="container">
 
-  <!-- Add card -->
-  <div class="card">
-    <h3 style="margin-bottom:16px;font-size:1rem">新增單字</h3>
-    <div class="add-form-grid">
-      <div class="form-group">
-        <label>單字 / 正面 *</label>
-        <input id="inFront" placeholder="e.g. hello">
-      </div>
-      <div class="form-group">
-        <label>意思 / 背面 *</label>
-        <input id="inBack" placeholder="e.g. 你好">
-      </div>
-    </div>
-    <div class="form-group">
-      <label>例句</label>
-      <input id="inSentence" placeholder="e.g. Hello, how are you?">
-    </div>
-    <div class="form-group">
-      <label>標籤（用分號分隔）</label>
-      <input id="inTags" placeholder="e.g. 日常;問候">
-    </div>
-    <div class="form-group">
-      <label>牌組</label>
-      <select id="inDeck"><option value="">— 選擇牌組 —</option></select>
-    </div>
-    <button class="btn btn-primary btn-full" id="addBtn">新增單字</button>
+  <!-- Accordion: 新增單字 -->
+  <div class="accordion-header" id="acc1" onclick="toggleAccordion('acc1','body1')">
+    <h3>＋ 新增單字</h3>
+    <svg class="accordion-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
   </div>
-
-  <!-- CSV Import -->
-  <div class="card">
-    <h3 style="margin-bottom:8px;font-size:1rem">匯入 CSV</h3>
-    <p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">格式：front,back,sentence,tags,deck（tags 用分號分隔，deck 欄位自動建立牌組）</p>
-    <input type="file" id="csvFile" accept=".csv" style="margin-bottom:10px">
-    <button class="btn btn-secondary btn-full" id="importBtn">匯入</button>
-    <div id="importProgress" style="display:none;margin-top:12px">
-      <div style="font-size:.85rem;color:var(--muted);margin-bottom:6px" id="importResult"></div>
-      <div style="background:var(--surface2);border-radius:4px;height:8px;overflow:hidden">
-        <div id="importBar" style="background:var(--accent);height:100%;width:0%;transition:width .2s"></div>
+  <div class="accordion-body" id="body1">
+    <div class="accordion-body-inner card" style="margin-bottom:4px">
+      <div class="add-form-grid">
+        <div class="form-group">
+          <label>單字 / 正面 *</label>
+          <input id="inFront" placeholder="e.g. hello">
+        </div>
+        <div class="form-group">
+          <label>意思 / 背面 *</label>
+          <input id="inBack" placeholder="e.g. 你好">
+        </div>
       </div>
+      <div class="form-group">
+        <label>例句</label>
+        <input id="inSentence" placeholder="e.g. Hello, how are you?">
+      </div>
+      <div class="form-group">
+        <label>標籤（用分號分隔）</label>
+        <input id="inTags" placeholder="e.g. 日常;問候">
+      </div>
+      <div class="form-group">
+        <label>牌組</label>
+        <select id="inDeck"><option value="">— 選擇牌組 —</option></select>
+      </div>
+      <button class="btn btn-primary btn-full" id="addBtn">新增單字</button>
     </div>
   </div>
 
-  <!-- Deck list -->
-  <div class="card">
-    <div class="section-header" style="margin-bottom:12px">
-      <h3 style="font-size:1rem">牌組管理</h3>
-      <div style="display:flex;gap:8px">
-        <input id="newDeckName" placeholder="新牌組名稱" style="width:auto;flex:1;padding:7px 12px;font-size:.85rem">
+  <!-- Accordion: 匯入 CSV -->
+  <div class="accordion-header" id="acc2" onclick="toggleAccordion('acc2','body2')">
+    <h3>📥 匯入 CSV</h3>
+    <svg class="accordion-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+  </div>
+  <div class="accordion-body" id="body2">
+    <div class="accordion-body-inner card" style="margin-bottom:4px">
+      <p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">格式：front,back,sentence,tags,deck（tags 用分號分隔，deck 欄位自動建立牌組）</p>
+      <input type="file" id="csvFile" accept=".csv" style="margin-bottom:10px">
+      <button class="btn btn-secondary btn-full" id="importBtn">匯入</button>
+      <div id="importProgress" style="display:none;margin-top:12px">
+        <div style="font-size:.85rem;color:var(--muted);margin-bottom:6px" id="importResult"></div>
+        <div style="background:var(--surface2);border-radius:4px;height:8px;overflow:hidden">
+          <div id="importBar" style="background:var(--accent);height:100%;width:0%;transition:width .2s"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Accordion: 牌組管理 -->
+  <div class="accordion-header open" id="acc3" onclick="toggleAccordion('acc3','body3')">
+    <h3>📂 牌組管理</h3>
+    <svg class="accordion-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+  </div>
+  <div class="accordion-body open" id="body3">
+    <div class="accordion-body-inner card" style="margin-bottom:4px">
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <input id="newDeckName" placeholder="新牌組名稱" style="flex:1;padding:7px 12px;font-size:.85rem">
         <button class="btn btn-secondary btn-sm" id="addDeckBtn">新增</button>
       </div>
+      <div id="deckList">
+        <!-- skeleton -->
+        <div class="skeleton" style="height:52px;border-radius:12px;margin-bottom:8px"></div>
+        <div class="skeleton" style="height:52px;border-radius:12px"></div>
+      </div>
     </div>
-    <div id="deckList"></div>
   </div>
 
-  <!-- Card list -->
-  <div>
+  <!-- 單字列表 -->
+  <div style="margin-top:8px">
     <div class="section-header">
       <h3>單字列表</h3>
       <span id="cardCount" style="font-size:.85rem;color:var(--muted)"></span>
@@ -92,7 +109,12 @@
         <input id="searchInput" placeholder="搜尋單字...">
       </div>
     </div>
-    <div class="card-list" id="cardList"></div>
+    <!-- 虛擬捲動容器 -->
+    <div id="cardListContainer" style="position:relative;overflow-y:auto;max-height:60vh">
+      <div id="cardListSpacer" style="position:relative">
+        <div class="card-list" id="cardList"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -104,6 +126,8 @@
   import { addCard, getCards, getDecks, deleteCard, deleteDeck, ensureDeck, importCSV } from "./db.js";
 
   let uid, cards = [], decks = [];
+  const PAGE_SIZE = 50; // 虛擬捲動每次渲染筆數
+  let renderOffset = 0;
 
   onAuthStateChanged(auth, async user => {
     if (!user) { window.location.href = "index.html"; return; }
@@ -117,6 +141,14 @@
   });
 
   document.getElementById("logoutBtn").addEventListener("click", () => signOut(auth));
+
+  // Accordion
+  window.toggleAccordion = (headerId, bodyId) => {
+    const header = document.getElementById(headerId);
+    const body = document.getElementById(bodyId);
+    header.classList.toggle("open");
+    body.classList.toggle("open");
+  };
 
   // Add deck
   document.getElementById("addDeckBtn").addEventListener("click", async () => {
@@ -134,7 +166,8 @@
     const deckId = document.getElementById("filterDeck").value;
     cards = await getCards(uid, deckId || null);
     renderDecks();
-    renderList(cards);
+    renderOffset = 0;
+    renderList(getFiltered());
   }
 
   function renderDeckSelects() {
@@ -148,21 +181,38 @@
 
   function renderDecks() {
     const el = document.getElementById("deckList");
-    if (!decks.length) { el.innerHTML = '<p style="color:var(--muted);font-size:.85rem">尚無牌組</p>'; return; }
+    if (!decks.length) {
+      el.innerHTML = '<div class="empty-state" style="padding:24px 0"><div class="icon">📭</div><p>尚無牌組，請新增或匯入 CSV</p></div>';
+      return;
+    }
     el.innerHTML = decks.map(d => `
-      <div class="card-item">
+      <div class="card-item" id="deck-${d.id}">
         <div class="card-item-info">
           <div class="card-item-front">📂 ${d.name}</div>
         </div>
-        <button class="btn btn-danger btn-sm" data-deck="${d.id}" style="flex-shrink:0">刪除</button>
+        <button class="btn btn-danger btn-sm" data-deck="${d.id}">刪除</button>
+        <div class="delete-confirm" id="dconf-${d.id}">
+          <span>確定刪除整個牌組？</span>
+          <button class="btn btn-danger btn-sm" data-confirm-deck="${d.id}">確定</button>
+          <button class="btn btn-secondary btn-sm" data-cancel-deck="${d.id}">取消</button>
+        </div>
       </div>`).join("");
+
     el.querySelectorAll("[data-deck]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.getElementById(`dconf-${btn.dataset.deck}`).classList.add("show");
+      });
+    });
+    el.querySelectorAll("[data-confirm-deck]").forEach(btn => {
       btn.addEventListener("click", async () => {
-        const deck = decks.find(d => d.id === btn.dataset.deck);
-        if (!confirm(`確定刪除牌組「${deck?.name}」及其所有單字？`)) return;
-        await deleteDeck(uid, btn.dataset.deck);
+        await deleteDeck(uid, btn.dataset.confirmDeck);
         showToast("牌組已刪除");
         await refresh();
+      });
+    });
+    el.querySelectorAll("[data-cancel-deck]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.getElementById(`dconf-${btn.dataset.cancelDeck}`).classList.remove("show");
       });
     });
   }
@@ -217,32 +267,88 @@
   document.getElementById("filterDeck").addEventListener("change", async () => {
     const deckId = document.getElementById("filterDeck").value;
     cards = await getCards(uid, deckId || null);
+    renderOffset = 0;
     renderList(getFiltered());
   });
-  document.getElementById("searchInput").addEventListener("input", () => renderList(getFiltered()));
+  document.getElementById("searchInput").addEventListener("input", () => {
+    renderOffset = 0;
+    renderList(getFiltered());
+  });
+
+  // 虛擬捲動：捲到底部時載入更多
+  document.getElementById("cardListContainer").addEventListener("scroll", e => {
+    const el = e.target;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 100) {
+      const filtered = getFiltered();
+      if (renderOffset < filtered.length) {
+        renderOffset += PAGE_SIZE;
+        appendList(filtered);
+      }
+    }
+  });
 
   function renderList(list) {
     const container = document.getElementById("cardList");
     document.getElementById("cardCount").textContent = `${list.length} 筆`;
-    container.innerHTML = list.map(c => {
-      const deckName = decks.find(d => d.id === c.deckId)?.name || "";
-      return `<div class="card-item">
-        <div class="card-item-info">
-          <div class="card-item-front">${c.front}${deckName ? ` <span class="tag" style="font-size:.7rem;opacity:.7">${deckName}</span>` : ""}</div>
-          <div class="card-item-back">${c.back || ""}</div>
-          ${c.sentence ? `<div class="card-item-sentence">${c.sentence}</div>` : ""}
-          ${(c.tags||[]).length ? `<div class="tags">${c.tags.map(t=>`<span class="tag">${t}</span>`).join("")}</div>` : ""}
-        </div>
-        <button class="btn btn-danger btn-sm" data-id="${c.id}" style="flex-shrink:0">刪除</button>
-      </div>`;
-    }).join("");
+    renderOffset = PAGE_SIZE;
+    const slice = list.slice(0, renderOffset);
 
-    container.querySelectorAll("[data-id]").forEach(btn => {
+    if (!list.length) {
+      container.innerHTML = '<div class="empty-state"><div class="icon">🔍</div><p>找不到符合的單字</p></div>';
+      return;
+    }
+    container.innerHTML = slice.map(c => cardItemHtml(c)).join("");
+    bindDeleteEvents(container);
+  }
+
+  function appendList(list) {
+    const container = document.getElementById("cardList");
+    const slice = list.slice(renderOffset - PAGE_SIZE, renderOffset);
+    slice.forEach(c => {
+      const div = document.createElement("div");
+      div.innerHTML = cardItemHtml(c);
+      const item = div.firstElementChild;
+      container.appendChild(item);
+      bindDeleteEvents(item);
+    });
+  }
+
+  function cardItemHtml(c) {
+    const deckName = decks.find(d => d.id === c.deckId)?.name || "";
+    return `<div class="card-item" id="ci-${c.id}">
+      <div class="card-item-info">
+        <div class="card-item-front">${c.front}${deckName ? ` <span class="tag" style="font-size:.7rem;opacity:.7">${deckName}</span>` : ""}</div>
+        <div class="card-item-back">${c.back || ""}</div>
+        ${c.sentence ? `<div class="card-item-sentence">${c.sentence}</div>` : ""}
+        ${(c.tags||[]).length ? `<div class="tags">${c.tags.map(t=>`<span class="tag">${t}</span>`).join("")}</div>` : ""}
+      </div>
+      <button class="btn btn-danger btn-sm" data-id="${c.id}" style="flex-shrink:0">刪除</button>
+      <div class="delete-confirm" id="conf-${c.id}">
+        <span>確定刪除？</span>
+        <button class="btn btn-danger btn-sm" data-confirm="${c.id}">確定</button>
+        <button class="btn btn-secondary btn-sm" data-cancel="${c.id}">取消</button>
+      </div>
+    </div>`;
+  }
+
+  function bindDeleteEvents(root) {
+    root.querySelectorAll("[data-id]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.getElementById(`conf-${btn.dataset.id}`)?.classList.add("show");
+      });
+    });
+    root.querySelectorAll("[data-confirm]").forEach(btn => {
       btn.addEventListener("click", async () => {
-        if (!confirm("確定刪除？")) return;
-        await deleteCard(uid, btn.dataset.id);
+        await deleteCard(uid, btn.dataset.confirm);
+        document.getElementById(`ci-${btn.dataset.confirm}`)?.remove();
+        cards = cards.filter(c => c.id !== btn.dataset.confirm);
+        document.getElementById("cardCount").textContent = `${getFiltered().length} 筆`;
         showToast("已刪除");
-        await refresh();
+      });
+    });
+    root.querySelectorAll("[data-cancel]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.getElementById(`conf-${btn.dataset.cancel}`)?.classList.remove("show");
       });
     });
   }

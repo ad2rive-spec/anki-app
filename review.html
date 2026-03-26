@@ -25,55 +25,91 @@
   <!-- Deck selector -->
   <div style="margin-bottom:12px">
     <select id="deckSelect" class="deck-select">
-      <option value="">全部牌組</option>
+      <option value="">載入中...</option>
     </select>
   </div>
 
   <!-- Stats -->
   <div class="stats">
-    <div class="stat"><div class="num" id="statDue">0</div><div class="label">待複習</div></div>
+    <div class="stat"><div class="num" id="statDue">—</div><div class="label">待複習</div></div>
     <div class="stat"><div class="num" id="statDone">0</div><div class="label">今日完成</div></div>
-    <div class="stat"><div class="num" id="statTotal">0</div><div class="label">總單字</div></div>
+    <div class="stat"><div class="num" id="statTotal">—</div><div class="label">總單字</div></div>
   </div>
 
   <!-- Progress -->
   <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
 
+  <!-- Skeleton loading -->
+  <div id="skeletonArea">
+    <div class="skeleton-card">
+      <div class="skeleton skeleton-line lg"></div>
+      <div class="skeleton skeleton-line sm"></div>
+    </div>
+    <div style="text-align:center;margin-top:16px">
+      <div class="skeleton" style="height:44px;width:140px;display:inline-block;border-radius:12px"></div>
+    </div>
+  </div>
+
   <!-- Review area -->
-  <div id="reviewArea">
-    <div class="review-card" id="reviewCard">
-      <div id="frontArea">
-        <div class="review-front" id="frontText">—</div>
-        <div class="tags" id="cardTags" style="justify-content:center;margin-top:8px"></div>
-        <button class="tts-btn" id="ttsBtn" title="朗讀">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/>
-          </svg>
-        </button>
-      </div>
-      <div id="backArea" style="display:none">
-        <div class="review-back" id="backText"></div>
-        <div class="review-sentence" id="sentenceText"></div>
+  <div id="reviewArea" style="display:none">
+    <div class="card-scene">
+      <div class="review-card" id="reviewCard">
+        <!-- Front face -->
+        <div class="card-face front" id="frontFace">
+          <div class="review-front" id="frontText">—</div>
+          <div class="tags" id="cardTags" style="justify-content:center"></div>
+          <button class="tts-btn" id="ttsBtn" title="朗讀 (T)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/>
+            </svg>
+          </button>
+        </div>
+        <!-- Back face -->
+        <div class="card-face back" id="backFace">
+          <div class="review-back" id="backText"></div>
+          <div class="review-sentence" id="sentenceText"></div>
+          <div class="tags" id="cardTagsBack" style="justify-content:center"></div>
+          <button class="tts-btn" id="ttsBtnBack" title="朗讀例句 (T)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
 
     <div style="text-align:center;margin-top:16px" id="showBtn">
-      <button class="btn btn-primary" id="revealBtn">顯示答案</button>
+      <button class="btn btn-primary" id="revealBtn">顯示答案 <span style="opacity:.5;font-size:.8rem;font-weight:400">空白鍵</span></button>
     </div>
 
     <div class="rating-btns" id="ratingBtns" style="display:none">
-      <button class="rating-btn r0" data-q="0">完全不記得</button>
-      <button class="rating-btn r1" data-q="1">很難</button>
-      <button class="rating-btn r2" data-q="2">還行</button>
-      <button class="rating-btn r3" data-q="3">容易</button>
+      <button class="rating-btn r0" data-q="0">完全不記得<span class="key-hint">[ 1 ]</span></button>
+      <button class="rating-btn r1" data-q="1">很難<span class="key-hint">[ 2 ]</span></button>
+      <button class="rating-btn r2" data-q="2">還行<span class="key-hint">[ 3 ]</span></button>
+      <button class="rating-btn r3" data-q="3">容易<span class="key-hint">[ 4 ]</span></button>
     </div>
   </div>
 
+  <!-- Empty state -->
+  <div id="emptyArea" style="display:none">
+    <div class="empty-state">
+      <div class="icon">📭</div>
+      <p>這個牌組還沒有單字<br>前往<a href="manage.html" style="color:var(--accent2)">管理頁面</a>新增或匯入 CSV</p>
+    </div>
+  </div>
+
+  <!-- Done area -->
   <div id="doneArea" style="display:none;text-align:center;padding:40px 0">
     <div style="font-size:3rem">🎉</div>
     <h2 style="margin:16px 0 8px">今日複習完成！</h2>
     <p style="color:var(--muted)">明天再來繼續</p>
-    <div style="display:flex;gap:12px;justify-content:center;margin-top:20px">
+    <!-- 今日統計 -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:20px 0" id="doneStats">
+      <div class="stat"><div class="num" id="doneTotal">0</div><div class="label">已複習</div></div>
+      <div class="stat"><div class="num" id="doneCorrect">0</div><div class="label">記得</div></div>
+      <div class="stat"><div class="num" id="doneTime">0m</div><div class="label">花費時間</div></div>
+    </div>
+    <div style="display:flex;gap:12px;justify-content:center">
       <button class="btn btn-primary" id="practiceAgainBtn">再練一次</button>
       <button class="btn btn-secondary" onclick="location.href='manage.html'">管理單字</button>
     </div>
@@ -88,7 +124,8 @@
   import { getCards, getDecks, getProgress, saveProgress } from "./db.js";
   import { sm2, isDue } from "./sm2.js";
 
-  let uid, cards = [], allCards = [], decks = [], progress = {}, queue = [], current = null, doneCount = 0, doneCards = [];
+  let uid, cards = [], allCards = [], decks = [], progress = {}, queue = [], current = null;
+  let doneCount = 0, doneCards = [], correctCount = 0, sessionStart = Date.now();
 
   onAuthStateChanged(auth, async user => {
     if (!user) { window.location.href = "index.html"; return; }
@@ -104,30 +141,36 @@
   document.getElementById("logoutBtn").addEventListener("click", () => signOut(auth));
 
   async function loadData() {
-    // 只先載入牌組清單
     decks = await getDecks(uid);
-
     const sel = document.getElementById("deckSelect");
     const opts = decks.map(d => `<option value="${d.id}">${d.name}</option>`).join("");
     sel.innerHTML = opts + '<option value="">全部牌組</option>';
     if (decks.length) sel.value = decks[0].id;
-
     await applyDeckFilter();
   }
 
   async function applyDeckFilter() {
+    // show skeleton
+    document.getElementById("skeletonArea").style.display = "block";
+    document.getElementById("reviewArea").style.display = "none";
+    document.getElementById("doneArea").style.display = "none";
+    document.getElementById("emptyArea").style.display = "none";
+
     const deckId = document.getElementById("deckSelect").value || null;
-    // 只抓選定牌組的卡片和 progress
-    [cards, progress] = await Promise.all([
-      getCards(uid, deckId),
-      getProgress(uid, deckId)
-    ]);
+    [cards, progress] = await Promise.all([getCards(uid, deckId), getProgress(uid, deckId)]);
     allCards = cards;
     queue = cards.filter(c => isDue({ ...progress[c.id] }));
-    doneCards = []; doneCount = 0;
+    doneCards = []; doneCount = 0; correctCount = 0; sessionStart = Date.now();
+
     document.getElementById("statDue").textContent = queue.length;
     document.getElementById("statTotal").textContent = cards.length;
-    document.getElementById("doneArea").style.display = "none";
+    document.getElementById("statDone").textContent = 0;
+    document.getElementById("skeletonArea").style.display = "none";
+
+    if (cards.length === 0) {
+      document.getElementById("emptyArea").style.display = "block";
+      return;
+    }
     document.getElementById("reviewArea").style.display = "block";
     showNext();
   }
@@ -135,8 +178,16 @@
   document.getElementById("deckSelect").addEventListener("change", applyDeckFilter);
 
   function showNext() {
+    // reset flip
+    const card = document.getElementById("reviewCard");
+    card.classList.remove("flipped");
+
     if (!queue.length) {
       document.getElementById("reviewArea").style.display = "none";
+      const elapsed = Math.round((Date.now() - sessionStart) / 60000);
+      document.getElementById("doneTotal").textContent = doneCount;
+      document.getElementById("doneCorrect").textContent = correctCount;
+      document.getElementById("doneTime").textContent = elapsed + "m";
       document.getElementById("doneArea").style.display = "block";
       return;
     }
@@ -144,10 +195,9 @@
     document.getElementById("frontText").textContent = current.front;
     document.getElementById("backText").textContent = current.back || "";
     document.getElementById("sentenceText").textContent = current.sentence || "";
-    // 顯示 tags
-    const tagsEl = document.getElementById("cardTags");
-    tagsEl.innerHTML = (current.tags || []).map(t => `<span class="tag">${t}</span>`).join("");
-    document.getElementById("backArea").style.display = "none";
+    const tagsHtml = (current.tags || []).map(t => `<span class="tag">${t}</span>`).join("");
+    document.getElementById("cardTags").innerHTML = tagsHtml;
+    document.getElementById("cardTagsBack").innerHTML = tagsHtml;
     document.getElementById("showBtn").style.display = "block";
     document.getElementById("ratingBtns").style.display = "none";
     updateProgress();
@@ -161,18 +211,22 @@
   }
 
   document.getElementById("revealBtn").addEventListener("click", () => {
-    document.getElementById("backArea").style.display = "block";
+    document.getElementById("reviewCard").classList.add("flipped");
     document.getElementById("showBtn").style.display = "none";
-    document.getElementById("ratingBtns").style.display = "grid";
-    // 顯示答案後唸例句，沒有例句才唸正面單字
+    // 延遲到翻牌動畫一半後顯示評分按鈕
+    setTimeout(() => {
+      document.getElementById("ratingBtns").style.display = "grid";
+    }, 220);
     speak(current.sentence || current.front);
   });
 
   document.getElementById("ttsBtn").addEventListener("click", () => speak(current.front));
+  document.getElementById("ttsBtnBack").addEventListener("click", () => speak(current.sentence || current.front));
 
   document.querySelectorAll(".rating-btn").forEach(btn => {
     btn.addEventListener("click", async () => {
-      const q = parseInt(btn.dataset.q) + 2; // map 0-3 → 2-5
+      const q = parseInt(btn.dataset.q) + 2;
+      if (q >= 4) correctCount++; // q=2(還行) q=3(容易) 算記得
       const prev = progress[current.id] || {};
       const next = sm2(prev, q);
       progress[current.id] = next;
@@ -184,11 +238,9 @@
   });
 
   document.getElementById("practiceAgainBtn").addEventListener("click", () => {
-    // 優先用今日練過的牌，若為空則用全部單字
     const source = doneCards.length ? doneCards : cards;
     queue = [...source].sort(() => Math.random() - 0.5);
-    doneCards = [];
-    doneCount = 0;
+    doneCards = []; doneCount = 0; correctCount = 0; sessionStart = Date.now();
     document.getElementById("doneArea").style.display = "none";
     document.getElementById("reviewArea").style.display = "block";
     document.getElementById("statDue").textContent = queue.length;
@@ -197,11 +249,15 @@
 
   // 鍵盤快捷鍵
   document.addEventListener("keydown", e => {
-    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
     if (e.code === "Space") {
       e.preventDefault();
-      const revealBtn = document.getElementById("revealBtn");
-      if (document.getElementById("showBtn").style.display !== "none") revealBtn.click();
+      if (document.getElementById("showBtn").style.display !== "none") {
+        document.getElementById("revealBtn").click();
+      }
+    }
+    if (e.key === "t" || e.key === "T") {
+      speak(current?.front || "");
     }
     if (["1","2","3","4"].includes(e.key)) {
       const btns = document.querySelectorAll(".rating-btn");
@@ -218,13 +274,15 @@
 
   function speak(text) {
     if (!text || !speechSynthesis) return;
-    // Chrome bug workaround: resume() 解決長時間閒置後 TTS 卡住的問題
     speechSynthesis.cancel();
     speechSynthesis.resume();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = detectLang(text);
     u.rate = 0.9;
-    u.onend = () => speechSynthesis.cancel();
+    const btns = [document.getElementById("ttsBtn"), document.getElementById("ttsBtnBack")];
+    btns.forEach(b => b?.classList.add("playing"));
+    u.onend = () => { speechSynthesis.cancel(); btns.forEach(b => b?.classList.remove("playing")); };
+    u.onerror = () => btns.forEach(b => b?.classList.remove("playing"));
     speechSynthesis.speak(u);
   }
 </script>
